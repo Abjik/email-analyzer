@@ -1,66 +1,54 @@
+import imaplib
 import email
-import re
+from email.header import decode_header
+import webbrowser
+import os
+import json
 import sqlite3
-import email.parser
+import yaml
 
-class EmailAnalyzer:
-    def __init__(self, config):
-        self.config = config
+with open("config.yaml", 'r') as stream:
+    config = yaml.safe_load(stream)
 
-        self.mail_client = email.parser.Parser()
+mail = imaplib.IMAP4_SSL(config['imap_server'])
+mail.login(config['email_address'], config['password'])
+mail.select("inbox")
 
-class EmailAnalyzer:
-    def __init__(self, config):
-        self.config = config
+result, data = mail.uid('search', None, "ALL")
 
-        self.mail_client = email.parser.Parser()
-        self.db = sqlite3.connect(config["db_path"])
+email_ids = data[0].split()
 
-        self.trigger_recipients = config["trigger_recipients"]
-        self.data_fields = config["data_fields"]
+conn = sqlite3.connect(config['db_path'])
+cursor = conn.cursor()
 
-    def check_format(self, message):
-        # Проверяем, что сообщение содержит все необходимые поля
-        for field in self.data_fields:
-            if field not in message.get_payload()[0].get_body():
-                return False
+for id in email_ids:
+    result, message_data = mail.uid('fetch', id, '(BODY.PEEK[])')
+    raw_email = message_data[0][1].decode("utf-8")
+    email_message = email.message_from_string(raw_email)
 
-        return True
+    from_ = email.utils.parseaddr(email_message['From'])[1]
+    if from_ not in config['trigger_recipients']:
+        continue
 
-    def extract_data(self, message):
-        # Извлечем данные из сообщения
-        data = {}
-        for field in self.data_fields:
-            match = re.search(f"{field}: (.*)", message.get_payload()[0].get_body())
-            if match:
-                data[field] = match.group(1)
+    if email_message.is_multipart():
+        for payload in email_message.get_payload():
+            body = payload.get_payload(decode=True)
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                continue
+    else:
+        body = email_message.get_payload(decode=True)
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            continue
 
-        return data
+    cursor.execute("SELECT * FROM data WHERE name = ? AND email = ?", (data['name'], data['email']))
+    if cursor.fetchone() is None:
+        continue
 
-    def insert_data(self, data):
-        # Добавляем данные в базу данных
-        cursor = self.db.cursor()
-        cursor.execute(
-            f"INSERT INTO data (name, email, phone) VALUES (?, ?, ?)",
-            (data["name"], data["email"], data["phone"]),
-        )
-        self.db.commit()
+    cursor.execute("INSERT INTO data (name, email, phone) VALUES (?, ?, ?)", (data['name'], data['email'], data['phone']))
+    conn.commit()
 
-
-def main():
-    config = {
-        "db_path": "/path/to/db.sqlite3",
-        "trigger_recipients": ["example@example.com"],
-        "data_fields": ["name", "email", "phone"],
-    }
-
-    analyzer = EmailAnalyzer(config)
-
-    # TODO: получить сообщение из почтового ящика
-    message = ...
-
-    analyzer.analyze_message(message)
-
-
-if __name__ == "__main__":
-    main()
+conn.close()

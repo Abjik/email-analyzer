@@ -1,0 +1,7 @@
+imap_server: imap.gmail.com
+email_address: 200107009@stu.sdu.edu.kz
+password: abzhiknotgay
+db_path: /db.sqlite3
+trigger_recipients:
+  - test1@example.com
+  - test2@example.com
