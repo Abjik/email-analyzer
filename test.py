@@ -34,21 +34,21 @@ for id in email_ids:
         for payload in email_message.get_payload():
             body = payload.get_payload(decode=True)
             try:
-                data = json.loads(body)
+                email_data = json.loads(body)
             except json.JSONDecodeError:
                 continue
     else:
         body = email_message.get_payload(decode=True)
         try:
-            data = json.loads(body)
+            email_data = json.loads(body)
         except json.JSONDecodeError:
             continue
 
-    cursor.execute("SELECT * FROM data WHERE name = ? AND email = ?", (data['name'], data['email']))
+    cursor.execute("SELECT * FROM data WHERE name = ? AND email = ?", (email_data['name'], email_data['email']))
     if cursor.fetchone() is None:
         continue
 
-    cursor.execute("INSERT INTO data (name, email, phone) VALUES (?, ?, ?)", (data['name'], data['email'], data['phone']))
+    cursor.execute("INSERT INTO data (name, email, phone) VALUES (?, ?, ?)", (email_data['name'], email_data['email'], email_data['phone']))
     conn.commit()
 
 conn.close()
