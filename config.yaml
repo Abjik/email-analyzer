@@ -5,3 +5,7 @@ db_path: /db.sqlite3
 trigger_recipients:
   - 200107009@stu.sdu.edu.kz
   - lofasrin@mail.ru
+message_format:
+  - name
+  - email
+  - phone
