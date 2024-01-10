@@ -11,7 +11,7 @@ with open('config.yaml', 'r') as file:
 # Установка соединения с почтовым сервером
 mail = imaplib.IMAP4_SSL(config['imap_server'])
 mail.login(config['email_address'], config['password'])
-mail.select('inbox')  # Выбор почтового ящика
+mail.select('Inbox')  # Выбор почтового ящика
 
 # Создание соединения с базой данных
 with sqlite3.connect(config['db_path']) as conn:

@@ -1,11 +1,11 @@
 imap_server: imap.gmail.com
 email_address: lofasrin@gmail.com
-password: dgtb lohk zxyo omyc
-db_path: /db.sqlite3
+password: dgtblohkzxyoomyc
+db_path: db.sqlite3
 trigger_recipients:
   - 200107009@stu.sdu.edu.kz
   - lofasrin@mail.ru
 message_format:
   - name
   - email
-  - phone
+  - message
